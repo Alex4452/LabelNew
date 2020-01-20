@@ -1,0 +1,2 @@
+#define LABELNEW_API __declspec(dllexport)
+#define LABELNEW_API __declspec(dllimport)
