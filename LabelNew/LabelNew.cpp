@@ -107,7 +107,6 @@ string LabelStorage::getGroups(int id)
 
 Engine::Engine(LabelStorage* storage, string pathObjectLabel) : storageAccLabel(storage)
 {
-	//storageAccLabel = &storage;
 	parseObjLabel(pathObjectLabel);
 }
 
@@ -307,4 +306,22 @@ string InternalMandatoryAccessControl::InternalSecurityContext::getLabel()
 	}
 	temp.pop_back();
 	return temp;
+}
+
+void MandatoryAccessControl::SimplelabelStorage::createLevel(string full, string shortForm, int tag)
+{
+	string temp = tag + ":" + full + ":" + shortForm;
+	levels[tag] = temp;
+}
+
+void MandatoryAccessControl::SimplelabelStorage::createCompartment(string full, string shortForm, int tag)
+{
+	string temp = tag + ":" + full + ":" + shortForm;
+	compartments[tag] = temp;
+}
+
+void MandatoryAccessControl::SimplelabelStorage::createGroup(string full, string shortForm, int tag)
+{
+	string temp = tag + ":" + full + ":" + shortForm;
+	groups[tag] = temp;
 }

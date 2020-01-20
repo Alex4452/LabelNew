@@ -12,5 +12,4 @@ int main()
 	FileLabelStorage accessLabel("labelLevel.txt", "labelCompartments.txt", "labelGroups.txt");
 	Engine engineLabel(&accessLabel, "createLabel.txt");
 	bool check = engineLabel.checkAccess(engineLabel.getSecurityContext("OBJECT"), engineLabel.getSecurityContext("SUBJECT"), READ);
-	int i = 0;
 }

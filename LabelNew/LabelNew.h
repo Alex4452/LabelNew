@@ -110,6 +110,17 @@ namespace MandatoryAccessControl
 		static void readString(string& temp, string input, int& startInd, int& i);
 	};
 
+	class LABELNEW_API SimplelabelStorage : public LabelStorage
+	{
+	public:
+		SimplelabelStorage() {}
+
+		void createLevel(string full, string shortForm, int tag);
+
+		void createCompartment(string full, string shortForm, int tag);
+
+		void createGroup(string full, string shortForm, int tag);
+	};
 
 	class LABELNEW_API Engine
 	{
