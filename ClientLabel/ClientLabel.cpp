@@ -9,7 +9,8 @@ using namespace MandatoryAccessControl;
 
 int main()
 {
-	FileLabelStorage accessLabel("labelLevel.txt", "labelCompartments.txt", "labelGroups.txt");
-	Engine engineLabel(&accessLabel, "createLabel.txt");
+	FileLabelStorage accessLabel("labelLevel.txt", "labelCompartments.txt", "labelGroups.txt", "createLabel.txt");
+	Engine engineLabel(accessLabel);
 	bool check = engineLabel.checkAccess(engineLabel.getSecurityContext("OBJECT"), engineLabel.getSecurityContext("SUBJECT"), READ);
+	engineLabel.printAllLabel();
 }

@@ -163,6 +163,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="framework.h" />
+    <ClInclude Include="InternalSecurityContext.h" />
     <ClInclude Include="LabelNew.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>

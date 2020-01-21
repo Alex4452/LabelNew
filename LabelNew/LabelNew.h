@@ -5,6 +5,7 @@
 #endif
 
 #include "framework.h"
+#include "InternalSecurityContext.h"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -30,51 +31,11 @@ using namespace std;
 контекста и внутренний контекст, который и использует Engine во время обращения по внешнему.
 Это гарантирует корректность контекста, при его использовании (он или есть созданный в движке, или его нет).*/
 
-namespace InternalMandatoryAccessControl
-{
-
-	class LABELNEW_API InternalSecurityContext
-	{
-	public:
-		InternalSecurityContext()
-		{};
-		InternalSecurityContext(string labelID, int level, vector<int> compartments, vector<int> groups) :
-			labelID(labelID), level(level), compartments(compartments), groups(groups)
-		{}
-
-		~InternalSecurityContext()
-		{}
-
-		int getLevel() { return level; };
-
-		vector<int> getCompartments() { return compartments; };
-
-		vector<int> getGroups() { return groups; };
-
-		string getLabel();
-
-		string getLabelID() { return labelID; };
-
-	private:
-		string labelID;
-		int level;
-		vector<int> compartments;
-		vector<int> groups;
-	};
-
-}
-
 namespace MandatoryAccessControl
 {
+	class SecurityContext;
 
-	class LABELNEW_API SecurityContext;
-
-	typedef string LABELNEW_API Label;
-
-	typedef int LABELNEW_API LabelID;
-
-	typedef int LABELNEW_API AccessVector;
-
+	typedef int AccessVector;
 
 	enum LABELNEW_API AccessVectorFlag {
 		READ = 1,
@@ -92,53 +53,64 @@ namespace MandatoryAccessControl
 		string getLevel(int id);
 		string getCompartments(int id);
 		string getGroups(int id);
+		map<string, SecurityContext*> getObjLabels() { return objLabels; }
+
+		static void clearString(string& str);
+		static void readString(string& temp, string input, int& startInd, int& i);
+
+		// Considers a colon when parsing object labels
+		void checkColon(string temp, string& labelID, int& level,
+			vector<int>& compartments, vector<int>& groups, int colon);
 
 	protected:
 		map<int, string> levels;
 		map<int, string> compartments;
 		map<int, string> groups;
 
+		map<string, SecurityContext*> objLabels;
 	};
 
 	class LABELNEW_API FileLabelStorage : public LabelStorage
 	{
 	public:
-		FileLabelStorage(string pathLevels, string pathCompartments, string pathGroups);
+		FileLabelStorage(string pathLevels, string pathCompartments, string pathGroups, string pathObjectLabel);
 
+		// Function for parsing files containing levels, compartments and groups
 		void parseFile(string path, map<int, string>& labels);
-		static void clearString(string& str);
-		static void readString(string& temp, string input, int& startInd, int& i);
+
+		// Function for parsing files containing objects labels
+		void parseObjLabel(string path);
 	};
 
-	class LABELNEW_API SimplelabelStorage : public LabelStorage
+	class LABELNEW_API SimpleLabelStorage : public LabelStorage
 	{
 	public:
-		SimplelabelStorage() {}
+		SimpleLabelStorage() {}
 
 		void createLevel(string full, string shortForm, int tag);
 
 		void createCompartment(string full, string shortForm, int tag);
 
 		void createGroup(string full, string shortForm, int tag);
+
+		void createObjectLabel(string id, int level, vector<int>& compartments, vector<int>& groups);
 	};
 
 	class LABELNEW_API Engine
 	{
 	public:
-		Engine(LabelStorage* storage, string pathObjectLabel);
-
-		void parseObjLabel(string path);
-		void checkColon(string temp, string& labelID, int& level,
-			vector<int>& compartments, vector<int>& groups, int colon);
+		Engine(LabelStorage& storage) 
+		{
+			objLabels = storage.getObjLabels();
+		};
 
 		SecurityContext& getSecurityContext(string labelID);
 
-		bool checkAccess(SecurityContext subject, SecurityContext object, AccessVector accessVector);
+		bool checkAccess(SecurityContext& subject, SecurityContext& object, AccessVector accessVector);
 
-		void getAllLabel();
-		void getLabel(string labelID);
+		void printAllLabel();
+		void printLabel(string labelID);
 	private:
-		LabelStorage* storageAccLabel;
 		map<string, SecurityContext*> objLabels;
 	};
 
@@ -147,7 +119,7 @@ namespace MandatoryAccessControl
 	{
 	public:
 		SecurityContext() {};
-		SecurityContext(string id, int level, vector<int> compartments, vector<int> groups);
+		SecurityContext(string id, int level, const vector<int>& compartments, const vector<int>& groups);
 
 		~SecurityContext()
 		{
