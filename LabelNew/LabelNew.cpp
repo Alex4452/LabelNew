@@ -18,10 +18,11 @@ FileLabelStorage::FileLabelStorage(string pathLevels, string pathCompartments, s
 
 void FileLabelStorage::parseFile(string path, map<int, string>& labels)
 {
-	ifstream labelFile(path);
+	ifstream labelFile;
+	labelFile.open(path);
 	if (!labelFile.is_open()) 
 	{
-		printf("File not found.");
+		printf("File not found.\n");
 		return;
 	}
 
@@ -279,26 +280,28 @@ bool MandatoryAccessControl::Engine::checkAccess(SecurityContext& subject, Secur
 		return false;
 }
 
-void MandatoryAccessControl::Engine::printAllLabel()
+string MandatoryAccessControl::Engine::getAllLabel()
 {
+	string temp = "";
 	for (auto it = objLabels.begin(); it != objLabels.end(); it++)
 	{
-		printf((*it).second->getLabel().c_str());
-		printf("\n");
+		temp += (*it).second->getLabel() + "\n";
 	}
+	return temp;
 }
 
-void MandatoryAccessControl::Engine::printLabel(string labelID)
+string MandatoryAccessControl::Engine::getLabel(string labelID)
 {
+	string temp = "";
 	if (objLabels.find(labelID) != objLabels.end())
 	{
-		printf((*objLabels.find(labelID)).second->getLabel().c_str());
-		printf("\n");
+		temp += (*objLabels.find(labelID)).second->getLabel();
 	}
 	else
 	{
 		printf("Label not found.");
 	}
+	return temp;
 }
 
 MandatoryAccessControl::SecurityContext::SecurityContext(const string id, const int level,
@@ -334,19 +337,19 @@ vector<int> MandatoryAccessControl::SecurityContext::getGroupsLabel()
 
 void MandatoryAccessControl::SimpleLabelStorage::createLevel(string full, string shortForm, int tag)
 {
-	string temp = tag + ":" + full + ":" + shortForm;
+	string temp = to_string(tag) + ":" + full + ":" + shortForm;
 	levels[tag] = temp;
 }
 
 void MandatoryAccessControl::SimpleLabelStorage::createCompartment(string full, string shortForm, int tag)
 {
-	string temp = tag + ":" + full + ":" + shortForm;
+	string temp = to_string(tag) + ":" + full + ":" + shortForm;
 	compartments[tag] = temp;
 }
 
 void MandatoryAccessControl::SimpleLabelStorage::createGroup(string full, string shortForm, int tag)
 {
-	string temp = tag + ":" + full + ":" + shortForm;
+	string temp = to_string(tag) + ":" + full + ":" + shortForm;
 	groups[tag] = temp;
 }
 

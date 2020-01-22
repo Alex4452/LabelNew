@@ -108,8 +108,8 @@ namespace MandatoryAccessControl
 
 		bool checkAccess(SecurityContext& subject, SecurityContext& object, AccessVector accessVector);
 
-		void printAllLabel();
-		void printLabel(string labelID);
+		string getAllLabel();
+		string getLabel(string labelID);
 
 		int getCountLabel() { return objLabels.size(); }
 	private:
