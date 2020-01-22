@@ -29,8 +29,11 @@ void FileLabelStorage::parseFile(string path, map<int, string>& labels)
 	{
 		string buff;
 		getline(labelFile, buff);
-		int labelID = 0;
 
+		if (strlen(buff.c_str()) == 0)
+			continue;
+
+		int labelID = 0;
 		int startInd = 0;
 		int colon = 0;
 		int i = 0;
@@ -126,6 +129,7 @@ void MandatoryAccessControl::FileLabelStorage::parseObjLabel(string path)
 		vector<int> compartments;
 		vector<int> groups;
 
+		bool accessCreateLabel;
 		int startInd = 0;
 		int colon = 0;
 		string temp;
@@ -136,51 +140,81 @@ void MandatoryAccessControl::FileLabelStorage::parseObjLabel(string path)
 			{
 			case ':':
 				FileLabelStorage::readString(temp, buff, startInd, i);
-				checkColon(temp, labelID, level, compartments, groups, colon);
+				accessCreateLabel = checkColon(temp, labelID, level, compartments, groups, colon);
+				if (!accessCreateLabel)
+					break;
 				colon++;
 				break;
 			case ',':
 				FileLabelStorage::readString(temp, buff, startInd, i);
-				checkColon(temp, labelID, level, compartments, groups, colon);
+				accessCreateLabel = checkColon(temp, labelID, level, compartments, groups, colon);
+				if (!accessCreateLabel)
+					break;
 				break;
 			default:
 				break;
 			}
 		}
 		FileLabelStorage::readString(temp, buff, startInd, i);
-		checkColon(temp, labelID, level, compartments, groups, colon);
-		objLabels[labelID] = new SecurityContext(labelID, level, compartments, groups);
+		if(accessCreateLabel)
+			accessCreateLabel = checkColon(temp, labelID, level, compartments, groups, colon);
+
+		if(accessCreateLabel)
+			objLabels[labelID] = new SecurityContext(labelID, level, compartments, groups);
+		else
+			printf("Check entered label.\n");
 	}
 }
 
-void MandatoryAccessControl::LabelStorage::checkColon(string temp, string & labelID,
+/******************************************************************************
+ *
+ *	Checks which colon and depending on this determines a particular label field
+ */
+
+bool MandatoryAccessControl::LabelStorage::checkColon(string temp, string & labelID,
 	int & level, vector<int>& compartment, vector<int>& group, int colon)
 {
+	string type = "Default";
 	switch (colon)
 	{
 	case 0:
-		labelID = temp;
+		type = "ID";
+		if (strlen(temp.c_str()) != 0)
+		{
+			labelID = temp;
+			return true;
+		}
 		break;
 	case 1:
+		type = "Level";
 		if (levels.find(atoi(temp.c_str())) != levels.end())
+		{
 			level = atoi(temp.c_str());
-		else
-			printf("Level not found.\n");
+			return true;
+		}
 		break;
 	case 2:
+		type = "Compartments";
 		if (compartments.find(atoi(temp.c_str())) != compartments.end())
+		{
 			compartment.push_back(atoi(temp.c_str()));
-		else
-			printf("Compartments not found.\n");
+			return true;
+		}
 		break;
 	case 3:
+		type = "Groups";
 		if (groups.find(atoi(temp.c_str())) != groups.end())
+		{
 			group.push_back(atoi(temp.c_str()));
-		else
-			printf("Group not found.\n");
+			return true;
+		}
+		break;
 	default:
+		type = "Collon number";
 		break;
 	}
+	printf((type + " not found.\n").c_str());
+	return false;
 }
 
 SecurityContext& MandatoryAccessControl::Engine::getSecurityContext(string labelID)
@@ -256,9 +290,10 @@ void MandatoryAccessControl::Engine::printAllLabel()
 
 void MandatoryAccessControl::Engine::printLabel(string labelID)
 {
-	if ((*objLabels.find(labelID)).second != NULL)
+	if (objLabels.find(labelID) != objLabels.end())
 	{
 		printf((*objLabels.find(labelID)).second->getLabel().c_str());
+		printf("\n");
 	}
 	else
 	{

@@ -59,7 +59,7 @@ namespace MandatoryAccessControl
 		static void readString(string& temp, string input, int& startInd, int& i);
 
 		// Considers a colon when parsing object labels
-		void checkColon(string temp, string& labelID, int& level,
+		bool checkColon(string temp, string& labelID, int& level,
 			vector<int>& compartments, vector<int>& groups, int colon);
 
 	protected:
@@ -110,6 +110,8 @@ namespace MandatoryAccessControl
 
 		void printAllLabel();
 		void printLabel(string labelID);
+
+		int getCountLabel() { return objLabels.size(); }
 	private:
 		map<string, SecurityContext*> objLabels;
 	};
