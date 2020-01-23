@@ -220,9 +220,10 @@ bool MandatoryAccessControl::LabelStorage::checkColon(string temp, string & labe
 
 SecurityContext& MandatoryAccessControl::Engine::getSecurityContext(string labelID)
 {
-	if (objLabels.find(labelID) != objLabels.end())
+	map<string, SecurityContext*> temp = label.getAllObjLabels();
+	if (temp.find(labelID) != temp.end())
 	{
-		return *objLabels.find(labelID)->second;
+		return *temp.find(labelID)->second;
 	}
 	else
 	{
@@ -283,19 +284,21 @@ bool MandatoryAccessControl::Engine::checkAccess(SecurityContext& subject, Secur
 string MandatoryAccessControl::Engine::getAllLabel()
 {
 	string temp = "";
-	for (auto it = objLabels.begin(); it != objLabels.end(); it++)
+	map<string, SecurityContext*> tempLabel = label.getAllObjLabels();
+	for (auto it = tempLabel.begin(); it != tempLabel.end(); it++)
 	{
 		temp += (*it).second->getLabel() + "\n";
 	}
 	return temp;
 }
 
-string MandatoryAccessControl::Engine::getLabel(string labelID)
+string MandatoryAccessControl::Engine::getReadableLookLabel(string labelID)
 {
 	string temp = "";
-	if (objLabels.find(labelID) != objLabels.end())
+	map<string, SecurityContext*> tempLabel = label.getAllObjLabels();
+	if (tempLabel.find(labelID) != tempLabel.end())
 	{
-		temp += (*objLabels.find(labelID)).second->getLabel();
+		temp += (*tempLabel.find(labelID)).second->getLabel();
 	}
 	else
 	{

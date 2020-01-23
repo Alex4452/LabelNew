@@ -53,7 +53,7 @@ namespace MandatoryAccessControl
 		string getLevel(int id);
 		string getCompartments(int id);
 		string getGroups(int id);
-		map<string, SecurityContext*> getObjLabels() { return objLabels; }
+		map<string, SecurityContext*> getAllObjLabels() { return objLabels; }
 
 		static void clearString(string& str);
 		static void readString(string& temp, string input, int& startInd, int& i);
@@ -99,21 +99,19 @@ namespace MandatoryAccessControl
 	class LABELNEW_API Engine
 	{
 	public:
-		Engine(LabelStorage& storage) 
-		{
-			objLabels = storage.getObjLabels();
-		};
+		Engine(LabelStorage& storage) : label(storage)
+		{};
 
 		SecurityContext& getSecurityContext(string labelID);
 
 		bool checkAccess(SecurityContext& subject, SecurityContext& object, AccessVector accessVector);
 
 		string getAllLabel();
-		string getLabel(string labelID);
+		SecurityContext* getsLabel(string id) { return label.getAllObjLabels().find(id)->second; }
+		string getReadableLookLabel(string labelID);
 
-		int getCountLabel() { return objLabels.size(); }
 	private:
-		map<string, SecurityContext*> objLabels;
+		LabelStorage label;
 	};
 
 
