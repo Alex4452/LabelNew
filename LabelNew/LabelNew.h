@@ -53,6 +53,7 @@ namespace MandatoryAccessControl
 		string getLevel(int id);
 		string getCompartments(int id);
 		string getGroups(int id);
+		int getParentGroup(int id);
 		map<string, SecurityContext*> getAllObjLabels() { return objLabels; }
 
 		static void clearString(string& str);
@@ -63,12 +64,24 @@ namespace MandatoryAccessControl
 			vector<int>& compartments, vector<int>& groups, int colon);
 
 	protected:
+		
+		struct Group
+		{
+			string readableForm;
+			int parentGroup;
+		};
+
 		map<int, string> levels;
 		map<int, string> compartments;
-		map<int, string> groups;
+		map<int, Group> groups;
 
 		map<string, SecurityContext*> objLabels;
 	};
+
+/******************************************************************************
+ *
+ *	Loading labels from a file
+ */
 
 	class LABELNEW_API FileLabelStorage : public LabelStorage
 	{
@@ -77,10 +90,16 @@ namespace MandatoryAccessControl
 
 		// Function for parsing files containing levels, compartments and groups
 		void parseFile(string path, map<int, string>& labels);
+		void parseFile(string path, map<int, Group>& labels);
 
 		// Function for parsing files containing objects labels
 		void parseObjLabel(string path);
 	};
+
+/******************************************************************************
+ *
+ *	Manual label loading
+ */
 
 	class LABELNEW_API SimpleLabelStorage : public LabelStorage
 	{
@@ -91,7 +110,7 @@ namespace MandatoryAccessControl
 
 		void createCompartment(string full, string shortForm, int tag);
 
-		void createGroup(string full, string shortForm, int tag);
+		void createGroup(string full, string shortForm, int tag, int parent = -1);
 
 		void createObjectLabel(string id, int level, vector<int>& compartments, vector<int>& groups);
 	};
@@ -105,9 +124,9 @@ namespace MandatoryAccessControl
 		SecurityContext& getSecurityContext(string labelID);
 
 		bool checkAccess(SecurityContext& subject, SecurityContext& object, AccessVector accessVector);
+		bool checkParentGroup(int idSubGroup, int idObGroup);
 
 		string getAllLabel();
-		SecurityContext* getsLabel(string id) { return label.getAllObjLabels().find(id)->second; }
 		string getReadableLookLabel(string labelID);
 
 	private:

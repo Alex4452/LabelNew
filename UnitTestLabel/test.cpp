@@ -107,10 +107,10 @@ TEST(TestWorkEngine, TestReadAccessCheck) {
 	labelTest.createCompartment("CHEMICAL", "CHEM", 65);
 
 	labelTest.createGroup("WESTERN_REGION", "WR", 1000);
-	labelTest.createGroup("WR_SALES", "WR_SAL", 1100);
+	labelTest.createGroup("WR_SALES", "WR_SAL", 1100, 1000);
 
 	vector<int> compartmentsObject = { 85, 65 };
-	vector<int> groupsObject = { 1000, 1100 };
+	vector<int> groupsObject = { 1000 };
 	labelTest.createObjectLabel("TestSubject", 40, compartmentsObject, groupsObject);
 
 	vector<int> compartmentsSubject = { 65 };
@@ -136,20 +136,20 @@ TEST(TestWorkEngine, TestWriteAccessCheck) {
 	labelTest.createCompartment("CHEMICAL", "CHEM", 65);
 
 	labelTest.createGroup("WESTERN_REGION", "WR", 1000);
-	labelTest.createGroup("WR_SALES", "WR_SAL", 1100);
+	labelTest.createGroup("WR_SALES", "WR_SAL", 1100, 1000);
 
 	vector<int> compartmentsObject = { 85, 65 };
-	vector<int> groupsObject = { 1000, 1100 };
-	labelTest.createObjectLabel("TestSubject", 40, compartmentsObject, groupsObject);
+	vector<int> groupsSubject = { 1000 };
+	labelTest.createObjectLabel("TestSubject", 40, compartmentsObject, groupsSubject);
 
 	vector<int> compartmentsSubject = { 65 };
-	vector<int> groupsSubject = { 1100 };
-	labelTest.createObjectLabel("TestObject", 40, compartmentsSubject, groupsSubject);
+	vector<int> groupsObject = { 1100 };
+	labelTest.createObjectLabel("TestObject", 40, compartmentsSubject, groupsObject);
 
 	Engine engineTest(labelTest);
 	SecurityContext subjTest = engineTest.getSecurityContext("TestSubject");
 	SecurityContext objTest = engineTest.getSecurityContext("TestObject");
 
 	EXPECT_TRUE(engineTest.checkAccess(subjTest, objTest, WRITE));
-	EXPECT_TRUE(engineTest.checkAccess(objTest, subjTest, WRITE));
+	EXPECT_FALSE(engineTest.checkAccess(objTest, subjTest, WRITE));
 }

@@ -65,6 +65,59 @@ void FileLabelStorage::parseFile(string path, map<int, string>& labels)
 	}
 }
 
+void FileLabelStorage::parseFile(string path, map<int, Group>& labels)
+{
+	ifstream labelFile;
+	labelFile.open(path);
+	if (!labelFile.is_open())
+	{
+		printf("File not found.\n");
+		return;
+	}
+
+	while (!labelFile.eof())
+	{
+		string buff;
+		getline(labelFile, buff);
+
+		if (strlen(buff.c_str()) == 0)
+			continue;
+
+		int labelID = 0;
+		int startInd = 0;
+		int colon = 0;
+		int i = 0;
+		string temp;
+		for (; i < buff.length(); i++)
+		{
+			switch (buff[i])
+			{
+			case ':':
+				readString(temp, buff, startInd, i);
+				if (colon == 0)
+				{
+					labelID = atoi(temp.c_str());
+					labels[atoi(temp.c_str())].readableForm = temp + ":";
+				}
+				else
+				{
+					labels[labelID].readableForm += temp + ":";
+				}
+				colon++;
+				break;
+			default:
+				break;
+			}
+		}
+		readString(temp, buff, startInd, i);
+		if (colon == 3)
+			labels[labelID].parentGroup = atoi(temp.c_str());
+		else
+			labels[labelID].parentGroup = -1;
+		labels[labelID].readableForm += temp;
+	}
+}
+
 void LabelStorage::clearString(string & str)
 {
 	for (int i = 0; i < str.length(); i++)
@@ -104,9 +157,18 @@ string LabelStorage::getCompartments(int id)
 
 string LabelStorage::getGroups(int id)
 {
-	map<int, string>::iterator it = groups.find(id);
+	map<int, Group>::iterator it = groups.find(id);
 	if (it != groups.end())
-		return it->second;
+		return it->second.readableForm;
+	else
+		return NULL;
+}
+
+int MandatoryAccessControl::LabelStorage::getParentGroup(int id)
+{
+	map<int, Group>::iterator it = groups.find(id);
+	if (it != groups.end())
+		return it->second.parentGroup;
 	else
 		return NULL;
 }
@@ -272,6 +334,11 @@ bool MandatoryAccessControl::Engine::checkAccess(SecurityContext& subject, Secur
 				groups = true;
 				break;
 			}
+			else if (checkParentGroup(subject.getGroupsLabel()[i], object.getGroupsLabel()[j]))
+			{
+				groups = true;
+				break;
+			}
 		}
 	}
 
@@ -279,6 +346,16 @@ bool MandatoryAccessControl::Engine::checkAccess(SecurityContext& subject, Secur
 		return true;
 	else
 		return false;
+}
+
+bool MandatoryAccessControl::Engine::checkParentGroup(int idSubGroup, int idObGroup)
+{
+	if (label.getParentGroup(idObGroup) == -1)
+		return false;
+	if (idSubGroup != label.getParentGroup(idObGroup))
+		return checkParentGroup(idSubGroup, label.getParentGroup(idObGroup));
+	else
+		return true;
 }
 
 string MandatoryAccessControl::Engine::getAllLabel()
@@ -350,10 +427,15 @@ void MandatoryAccessControl::SimpleLabelStorage::createCompartment(string full, 
 	compartments[tag] = temp;
 }
 
-void MandatoryAccessControl::SimpleLabelStorage::createGroup(string full, string shortForm, int tag)
+void MandatoryAccessControl::SimpleLabelStorage::createGroup(string full, string shortForm, int tag, int parent)
 {
-	string temp = to_string(tag) + ":" + full + ":" + shortForm;
-	groups[tag] = temp;
+	string temp;
+	if (parent != -1)
+		temp = to_string(tag) + ":" + full + ":" + shortForm + ":" + to_string(parent);
+	else
+		temp = to_string(tag) + ":" + full + ":" + shortForm;
+	groups[tag].readableForm = temp;
+	groups[tag].parentGroup = parent;
 }
 
 void MandatoryAccessControl::SimpleLabelStorage::createObjectLabel(string id, int level, vector<int>& compartment, vector<int>& group)
@@ -367,7 +449,7 @@ void MandatoryAccessControl::SimpleLabelStorage::createObjectLabel(string id, in
 	}
 
 	bool gr;
-	for (int i = 0; i < compartment.size(); i++)
+	for (int i = 0; i < group.size(); i++)
 	{
 		gr = (groups.find(group[i]) != groups.end()) ? true : false;
 	}
