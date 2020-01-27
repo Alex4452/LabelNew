@@ -13,9 +13,9 @@ TEST(TestCreateSimpleLabel, TestSimpleLabelStorage) {
 
 	// Check stored access label
 
-	EXPECT_EQ(labelTest.getLevel(40), "40:HIGHLY_SENSITIVE:HS");
-	EXPECT_EQ(labelTest.getCompartments(85), "85:FINANCIAL:FINCL");
-	EXPECT_EQ(labelTest.getGroups(1000), "1000:WESTERN_REGION:WR");
+	EXPECT_EQ(labelTest.getLevel(40).longForm, "HIGHLY_SENSITIVE");
+	EXPECT_EQ(labelTest.getCompartments(85).shortForm, "FINCL");
+	EXPECT_EQ(labelTest.getGroups(1000).component.longForm, "WESTERN_REGION");
 }
 
 TEST(TestCreateSimpleLabel, TestObjectSimpleLabelStorage) {
@@ -43,9 +43,9 @@ TEST(TestCreateFileLabel, TestFileLabelStorage) {
 
 	FileLabelStorage labelFileTest(fileLevel, fileCompartment, fileGroup, fileObjectLabel);
 
-	EXPECT_EQ(labelFileTest.getLevel(40), "40:HIGHLY_SENSITIVE:HS");
-	EXPECT_EQ(labelFileTest.getCompartments(85), "85:FINANCIAL:FINCL");
-	EXPECT_EQ(labelFileTest.getGroups(1000), "1000:WESTERN_REGION:WR");
+	EXPECT_EQ(labelFileTest.getLevel(40).longForm, "HIGHLY_SENSITIVE");
+	EXPECT_EQ(labelFileTest.getCompartments(85).shortForm, "FINCL");
+	EXPECT_EQ(labelFileTest.getGroups(1000).component.longForm, "WESTERN_REGION");
 
 }
 

@@ -35,6 +35,7 @@ namespace MandatoryAccessControl
 {
 	class SecurityContext;
 
+	typedef int ID;
 	typedef int AccessVector;
 
 	enum LABELNEW_API AccessVectorFlag {
@@ -47,14 +48,17 @@ namespace MandatoryAccessControl
 
 	class LABELNEW_API LabelStorage
 	{
+	protected:
+		struct Group;
+		struct Component;
 	public:
 		LabelStorage() {};
 
-		string getLevel(int id);
-		string getCompartments(int id);
-		string getGroups(int id);
-		int getParentGroup(int id);
-		map<string, SecurityContext*> getAllObjLabels() { return objLabels; }
+		Component& getLevel(ID id);
+		Component& getCompartments(ID id);
+		Group& getGroups(ID id);
+		Group& getParentGroup(ID id);
+		map<string, SecurityContext*>& getAllObjLabels() { return objLabels; }
 
 		static void clearString(string& str);
 		static void readString(string& temp, string input, int& startInd, int& i);
@@ -63,17 +67,29 @@ namespace MandatoryAccessControl
 		bool checkColon(string temp, string& labelID, int& level,
 			vector<int>& compartments, vector<int>& groups, int colon);
 
-	protected:
+		struct Component
+		{
+			Component () 
+			{}
+			Component (int numF, string longF, string shortF, ID id) : 
+				numForm(numF), longForm(longF), shortForm(shortF), idComponent(id)
+			{}
+			int numForm;
+			string longForm;
+			string shortForm;
+			ID idComponent;
+		};
 		
 		struct Group
 		{
-			string readableForm;
-			int parentGroup;
+			Group* parentGroup;
+			Component component;
 		};
 
-		map<int, string> levels;
-		map<int, string> compartments;
-		map<int, Group> groups;
+	protected:
+		map<ID, Component> levels;
+		map<ID, Component> compartments;
+		map<ID, Group> groups;
 
 		map<string, SecurityContext*> objLabels;
 	};
@@ -89,8 +105,8 @@ namespace MandatoryAccessControl
 		FileLabelStorage(string pathLevels, string pathCompartments, string pathGroups, string pathObjectLabel);
 
 		// Function for parsing files containing levels, compartments and groups
-		void parseFile(string path, map<int, string>& labels);
-		void parseFile(string path, map<int, Group>& labels);
+		void parseFile(string path, map<ID, Component>& labels);
+		void parseFile(string path, map<ID, Group>& labels);
 
 		// Function for parsing files containing objects labels
 		void parseObjLabel(string path);
@@ -106,11 +122,11 @@ namespace MandatoryAccessControl
 	public:
 		SimpleLabelStorage() {}
 
-		void createLevel(string full, string shortForm, int tag);
+		void createLevel(string full, string shortForm, int numForm);
 
-		void createCompartment(string full, string shortForm, int tag);
+		void createCompartment(string full, string shortForm, int numForm);
 
-		void createGroup(string full, string shortForm, int tag, int parent = -1);
+		void createGroup(string full, string shortForm, int numForm, int parent = -1);
 
 		void createObjectLabel(string id, int level, vector<int>& compartments, vector<int>& groups);
 	};
@@ -124,13 +140,14 @@ namespace MandatoryAccessControl
 		SecurityContext& getSecurityContext(string labelID);
 
 		bool checkAccess(SecurityContext& subject, SecurityContext& object, AccessVector accessVector);
+		bool compareGroups(SecurityContext& subject, SecurityContext& object);
 		bool checkParentGroup(int idSubGroup, int idObGroup);
 
 		string getAllLabel();
 		string getReadableLookLabel(string labelID);
 
 	private:
-		LabelStorage label;
+		LabelStorage& label;
 	};
 
 
