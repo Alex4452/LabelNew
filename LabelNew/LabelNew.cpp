@@ -16,7 +16,7 @@ FileLabelStorage::FileLabelStorage(string pathLevels, string pathCompartments, s
 	parseObjLabel(pathObjectLabel);
 }
 
-void FileLabelStorage::parseFile(string path, map<ID, LabelStorage::Component>& labels)
+void FileLabelStorage::parseFile(string path, map<ComponentID, LabelStorage::Component>& labels)
 {
 	ifstream labelFile;
 	labelFile.open(path);
@@ -34,7 +34,7 @@ void FileLabelStorage::parseFile(string path, map<ID, LabelStorage::Component>& 
 		if (strlen(buff.c_str()) == 0)
 			continue;
 
-		ID id = 0;
+		ComponentID id = 0;
 		int startInd = 0;
 		int colon = 0;
 		int i = 0;
@@ -49,69 +49,15 @@ void FileLabelStorage::parseFile(string path, map<ID, LabelStorage::Component>& 
 				{
 					id = atoi(temp.c_str());
 					labels[id].idComponent = atoi(temp.c_str());
+					labels[id].numForm = atoi(temp.c_str());
 				}
 				else if (colon == 1)
 				{
 					labels[id].longForm = temp;
 				}
-				else
-				{
-					//labels[id] += temp + ":";
-				}
-				colon++;
-				break;
-			default:
-				break;
-			}
-		}
-		readString(temp, buff, startInd, i);
-		labels[id].shortForm = temp;
-	}
-}
-
-void FileLabelStorage::parseFile(string path, map<int, Group>& labels)
-{
-	ifstream labelFile;
-	labelFile.open(path);
-	if (!labelFile.is_open())
-	{
-		printf("File not found.\n");
-		return;
-	}
-
-	while (!labelFile.eof())
-	{
-		string buff;
-		getline(labelFile, buff);
-
-		ID id;
-
-		if (strlen(buff.c_str()) == 0)
-			continue;
-
-		int startInd = 0;
-		int colon = 0;
-		int i = 0;
-		string temp;
-		for (; i < buff.length(); i++)
-		{
-			switch (buff[i])
-			{
-			case ':':
-				readString(temp, buff, startInd, i);
-				if (colon == 0)
-				{
-					id = atoi(temp.c_str());
-					labels[id].component.idComponent = id;
-					labels[id].component.numForm = atoi(temp.c_str());
-				}
-				else if (colon == 1)
-				{
-					labels[id].component.longForm = temp;
-				}
 				else if (colon == 2)
 				{
-					labels[id].component.shortForm = temp;
+					labels[id].shortForm = temp;
 				}
 				colon++;
 				break;
@@ -120,14 +66,12 @@ void FileLabelStorage::parseFile(string path, map<int, Group>& labels)
 			}
 		}
 		readString(temp, buff, startInd, i);
-		if (colon == 3)
-		{
-			labels[id].parentGroup = &getParentGroup(atoi(temp.c_str()));
-		}
+		if (colon == 2)
+			labels[id].shortForm = temp;
+		else if (colon == 3)
+			labels[id].parentComp = &getGroups(atoi(temp.c_str()));
 		else
-		{
-			labels[id].parentGroup = NULL;
-		}
+			labels[id].parentComp = NULL;
 	}
 }
 
@@ -150,40 +94,31 @@ void LabelStorage::readString(string & temp, string input, int & startInd, int &
 	startInd = i;
 }
 
-LabelStorage::Component& LabelStorage::getLevel(ID id)
+LabelStorage::Component& LabelStorage::getLevel(ComponentID id)
 {
-	map<ID, LabelStorage::Component>::iterator it = levels.find(id);
+	map<ComponentID, LabelStorage::Component>::iterator it = levels.find(id);
 	if (it != levels.end())
 		return it->second;
 	else
 		return *(new LabelStorage::Component());
 }
 
-LabelStorage::Component& LabelStorage::getCompartments(ID id)
+LabelStorage::Component& LabelStorage::getCompartments(ComponentID id)
 {
-	map<ID, LabelStorage::Component>::iterator it = compartments.find(id);
+	map<ComponentID, LabelStorage::Component>::iterator it = compartments.find(id);
 	if (it != compartments.end())
 		return it->second;
 	else
 		return *(new LabelStorage::Component());
 }
 
-LabelStorage::Group& LabelStorage::getGroups(ID id)
+LabelStorage::Component& LabelStorage::getGroups(ComponentID id)
 {
-	map<ID, Group>::iterator it = groups.find(id);
+	map<ComponentID, Component>::iterator it = groups.find(id);
 	if (it != groups.end())
 		return it->second;
 	else
-		return *(new LabelStorage::Group());
-}
-
-LabelStorage::Group& MandatoryAccessControl::LabelStorage::getParentGroup(ID id)
-{
-	map<int, Group>::iterator it = groups.find(id);
-	if (it != groups.end())
-		return it->second;
-	else
-		return *(new Group());
+		return *(new Component());
 }
 
 void MandatoryAccessControl::FileLabelStorage::parseObjLabel(string path)
@@ -365,17 +300,17 @@ bool MandatoryAccessControl::Engine::compareGroups(SecurityContext & subject, Se
 			}
 			else
 			{
-				LabelStorage::Group* obj = &label.getGroups(object.getGroupsLabel()[j]);
-				while (obj->parentGroup != NULL)
-				{
-					if (subject.getGroupsLabel()[i] == obj->component.numForm)
+				LabelStorage::Component* obj = &label.getGroups(object.getGroupsLabel()[j]);
+				while (obj->parentComp)
+				{	
+					if (subject.getGroupsLabel()[i] == obj->parentComp->numForm)
 					{
 						groups = true;
 						break;
 					}
 					else
 					{
-						obj = obj->parentGroup;
+						obj = obj->parentComp;
 					}
 				}
 				
@@ -383,16 +318,6 @@ bool MandatoryAccessControl::Engine::compareGroups(SecurityContext & subject, Se
 		}
 	}
 	return groups;
-}
-
-bool MandatoryAccessControl::Engine::checkParentGroup(int idSubGroup, int idObGroup)
-{
-	if (label.getParentGroup(idObGroup).component.idComponent == NULL)
-		return false;
-	if (idSubGroup != label.getParentGroup(idObGroup).component.idComponent)
-		return checkParentGroup(idSubGroup, label.getParentGroup(idObGroup).component.idComponent);
-	else
-		return true;
 }
 
 string MandatoryAccessControl::Engine::getAllLabel()
@@ -427,6 +352,12 @@ MandatoryAccessControl::SecurityContext::SecurityContext(const string id, const 
 	objLabel = new InternalMandatoryAccessControl::InternalSecurityContext(id, level, compartments, groups);
 }
 
+MandatoryAccessControl::SecurityContext::SecurityContext(string id, int level,
+	const vector<int>& compartments, const vector<int>& groups, long tag)
+{
+	objLabel = new InternalMandatoryAccessControl::InternalSecurityContext(id, level, compartments, groups, tag);
+}
+
 string MandatoryAccessControl::SecurityContext::getLabel()
 {
 	return objLabel->getLabel(); 
@@ -452,6 +383,11 @@ vector<int> MandatoryAccessControl::SecurityContext::getGroupsLabel()
 	return objLabel->getGroups();
 }
 
+long MandatoryAccessControl::SecurityContext::getTagLabel()
+{
+	return objLabel->getTag();
+}
+
 void MandatoryAccessControl::SimpleLabelStorage::createLevel(string full, string shortForm, int numForm)
 {
 	levels[numForm].idComponent = numForm;
@@ -470,14 +406,15 @@ void MandatoryAccessControl::SimpleLabelStorage::createCompartment(string full, 
 
 void MandatoryAccessControl::SimpleLabelStorage::createGroup(string full, string shortForm, int numForm, int parent)
 {
-	groups[numForm].component.idComponent = numForm;
-	groups[numForm].component.numForm = numForm;
-	groups[numForm].component.longForm = full;
-	groups[numForm].component.shortForm = shortForm;
-	groups[numForm].parentGroup = &getParentGroup(parent);
+	groups[numForm].idComponent = numForm;
+	groups[numForm].numForm = numForm;
+	groups[numForm].longForm = full;
+	groups[numForm].shortForm = shortForm;
+	groups[numForm].parentComp = &getGroups(parent);
 }
 
-void MandatoryAccessControl::SimpleLabelStorage::createObjectLabel(string id, int level, vector<int>& compartment, vector<int>& group)
+void MandatoryAccessControl::SimpleLabelStorage::createObjectLabel(string id, 
+	int level, vector<int>& compartment, vector<int>& group)
 {
 	bool lev = (levels.find(level) != levels.end()) ? true : false;
 
@@ -495,6 +432,29 @@ void MandatoryAccessControl::SimpleLabelStorage::createObjectLabel(string id, in
 
 	if (lev && comp && gr)
 		objLabels[id] = new SecurityContext(id, level, compartment, group);
+	else
+		printf("Check entered label.\n");
+}
+
+void MandatoryAccessControl::SimpleLabelStorage::createObjectLabel(string id, 
+	int level, vector<int>& compartment, vector<int>& group, long tag)
+{
+	bool lev = (levels.find(level) != levels.end()) ? true : false;
+
+	bool comp;
+	for (int i = 0; i < compartment.size(); i++)
+	{
+		comp = (compartments.find(compartment[i]) != compartments.end()) ? true : false;
+	}
+
+	bool gr;
+	for (int i = 0; i < group.size(); i++)
+	{
+		gr = (groups.find(group[i]) != groups.end()) ? true : false;
+	}
+
+	if (lev && comp && gr)
+		objLabels[id] = new SecurityContext(id, level, compartment, group, tag);
 	else
 		printf("Check entered label.\n");
 }

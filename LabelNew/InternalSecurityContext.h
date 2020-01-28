@@ -16,6 +16,10 @@ namespace InternalMandatoryAccessControl
 		InternalSecurityContext(const string labelID, const int level, const vector<int>& compartments, const vector<int>& groups) :
 			labelID(labelID), level(level), compartments(compartments), groups(groups)
 		{}
+		InternalSecurityContext(const string labelID, const int level, const vector<int>& compartments, const vector<int>& groups,
+			long tag) :
+			labelID(labelID), level(level), compartments(compartments), groups(groups), tagLabel(tag)
+		{}
 
 		~InternalSecurityContext()
 		{}
@@ -26,6 +30,8 @@ namespace InternalMandatoryAccessControl
 
 		vector<int> getGroups() { return groups; };
 
+		long getTag() { return tagLabel; };
+
 		string getLabel();
 
 		string getLabelID() { return labelID; };
@@ -35,6 +41,8 @@ namespace InternalMandatoryAccessControl
 		int level;
 		vector<int> compartments;
 		vector<int> groups;
+
+		long tagLabel;
 	};
 
 	string InternalMandatoryAccessControl::InternalSecurityContext::getLabel()

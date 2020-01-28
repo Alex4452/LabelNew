@@ -15,7 +15,7 @@ TEST(TestCreateSimpleLabel, TestSimpleLabelStorage) {
 
 	EXPECT_EQ(labelTest.getLevel(40).longForm, "HIGHLY_SENSITIVE");
 	EXPECT_EQ(labelTest.getCompartments(85).shortForm, "FINCL");
-	EXPECT_EQ(labelTest.getGroups(1000).component.longForm, "WESTERN_REGION");
+	EXPECT_EQ(labelTest.getGroups(1000).longForm, "WESTERN_REGION");
 }
 
 TEST(TestCreateSimpleLabel, TestObjectSimpleLabelStorage) {
@@ -45,7 +45,7 @@ TEST(TestCreateFileLabel, TestFileLabelStorage) {
 
 	EXPECT_EQ(labelFileTest.getLevel(40).longForm, "HIGHLY_SENSITIVE");
 	EXPECT_EQ(labelFileTest.getCompartments(85).shortForm, "FINCL");
-	EXPECT_EQ(labelFileTest.getGroups(1000).component.longForm, "WESTERN_REGION");
+	EXPECT_EQ(labelFileTest.getGroups(1000).longForm, "WESTERN_REGION");
 
 }
 
@@ -77,6 +77,23 @@ TEST(TestWorkEngine, TestGetLabelID) {
 	Engine engineTest(labelTest);
 
 	EXPECT_EQ(engineTest.getSecurityContext("TestObject").getLabelID(), "TestObject");
+}
+
+TEST(TestWorkEngine, TestGetTagLabel) {
+
+	SimpleLabelStorage labelTest;
+
+	labelTest.createLevel("HIGHLY_SENSITIVE", "HS", 40);
+	labelTest.createCompartment("FINANCIAL", "FINCL", 85);
+	labelTest.createGroup("WESTERN_REGION", "WR", 1000);
+
+	vector<int> compartments = { 85 };
+	vector<int> groups = { 1000 };
+	labelTest.createObjectLabel("TestObject", 40, compartments, groups, 101010);
+
+	Engine engineTest(labelTest);
+
+	EXPECT_EQ(engineTest.getSecurityContext("TestObject").getTagLabel(), 101010);
 }
 
 TEST(TestWorkEngine, TestGetLabel) {
