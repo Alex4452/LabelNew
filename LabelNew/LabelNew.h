@@ -37,6 +37,8 @@ namespace MandatoryAccessControl
 
 	typedef int ComponentID;
 	typedef int AccessVector;
+	typedef int LabelID;
+	typedef string Label;
 
 	enum LABELNEW_API AccessVectorFlag {
 		READ = 1,
@@ -46,6 +48,11 @@ namespace MandatoryAccessControl
 		//...
 	};
 
+	/******************************************************************************
+	 *
+	 *	Used for processing and storing component labels and object labels
+	 */
+
 	class LABELNEW_API LabelStorage
 	{
 	protected:
@@ -54,16 +61,19 @@ namespace MandatoryAccessControl
 	public:
 		LabelStorage() {};
 
+		// Used to get label components and object labels
 		Component& getLevel(ComponentID id);
 		Component& getCompartments(ComponentID id);
 		Component& getGroups(ComponentID id);
-		map<string, SecurityContext*>& getAllObjLabels() { return objLabels; }
+		map<LabelID, SecurityContext*>& getAllObjLabels() { return objLabels; }
 
+		// Used for clearing strings from spaces and extra characters
 		static void clearString(string& str);
+		// Used to trim a string at given indices
 		static void readString(string& temp, string input, int& startInd, int& i);
 
 		// Considers a colon when parsing object labels
-		bool checkColon(string temp, string& labelID, int& level,
+		bool checkColon(string temp, LabelID& labelID, int& level,
 			vector<int>& compartments, vector<int>& groups, int colon);
 
 		struct Component
@@ -78,21 +88,24 @@ namespace MandatoryAccessControl
 			string shortForm;
 			ComponentID idComponent;
 
+			// Used for storing parent group
 			Component* parentComp;
 		};
 
 	protected:
+		// Component labels
 		map<ComponentID, Component> levels;
 		map<ComponentID, Component> compartments;
 		map<ComponentID, Component> groups;
 
-		map<string, SecurityContext*> objLabels;
+		// Object labels
+		map<LabelID, SecurityContext*> objLabels;
 	};
 
-/******************************************************************************
- *
- *	Loading labels from a file
- */
+	/******************************************************************************
+	 *
+	 *	Loading labels from a file
+	 */
 
 	class LABELNEW_API FileLabelStorage : public LabelStorage
 	{
@@ -101,31 +114,34 @@ namespace MandatoryAccessControl
 
 		// Function for parsing files containing levels, compartments and groups
 		void parseFile(string path, map<ComponentID, Component>& labels);
-		void parseFile(string path, map<ComponentID, Group>& labels);
 
 		// Function for parsing files containing objects labels
 		void parseObjLabel(string path);
 	};
 
-/******************************************************************************
- *
- *	Manual label loading
- */
+	/******************************************************************************
+	 *
+	 *	Manual label loading
+	 */
 
 	class LABELNEW_API SimpleLabelStorage : public LabelStorage
 	{
 	public:
 		SimpleLabelStorage() {}
 
+		// Used for setting components label
 		void createLevel(string full, string shortForm, int numForm);
-
 		void createCompartment(string full, string shortForm, int numForm);
+		void createGroup(string full, string shortForm, int numForm, ComponentID parent = -1);
 
-		void createGroup(string full, string shortForm, int numForm, int parent = -1);
-
-		void createObjectLabel(string id, int level, vector<int>& compartments, vector<int>& groups);
-		void createObjectLabel(string id, int level, vector<int>& compartments, vector<int>& groups, long tag);
+		// Used for setting objects label
+		void createObjectLabel(LabelID id, ComponentID level, vector<ComponentID>& compartments, vector<ComponentID>& groups);
 	};
+
+	/******************************************************************************
+	 *
+	 *	Handles object labels, works with access rights
+	 */
 
 	class LABELNEW_API Engine
 	{
@@ -133,13 +149,15 @@ namespace MandatoryAccessControl
 		Engine(LabelStorage& storage) : label(storage)
 		{};
 
-		SecurityContext& getSecurityContext(string labelID);
+		// Used for getting objects label
+		SecurityContext& getSecurityContext(LabelID labelID);
 
+		// Used to verify access of one label to another
 		bool checkAccess(SecurityContext& subject, SecurityContext& object, AccessVector accessVector);
 		bool compareGroups(SecurityContext& subject, SecurityContext& object);
 
-		string getAllLabel();
-		string getReadableLookLabel(string labelID);
+		Label getAllLabel();
+		Label getReadableLookLabel(LabelID labelID);
 
 	private:
 		LabelStorage& label;
@@ -150,20 +168,18 @@ namespace MandatoryAccessControl
 	{
 	public:
 		SecurityContext() {};
-		SecurityContext(string id, int level, const vector<int>& compartments, const vector<int>& groups);
-		SecurityContext(string id, int level, const vector<int>& compartments, const vector<int>& groups, long tag);
+		SecurityContext(LabelID id, ComponentID level, const vector<ComponentID>& compartments, const vector<ComponentID>& groups);
 
 		~SecurityContext()
 		{
 			delete objLabel;
 		}
 
-		string getLabel();
-		string getLabelID();
-		int getLevelLabel();
-		vector<int> getCompartmentsLabel();
-		vector<int> getGroupsLabel();
-		long getTagLabel();
+		Label getLabel();
+		LabelID getLabelID();
+		ComponentID getLevelLabel();
+		vector<ComponentID> getCompartmentsLabel();
+		vector<ComponentID> getGroupsLabel();
 
 	private:
 		InternalMandatoryAccessControl::InternalSecurityContext* objLabel;

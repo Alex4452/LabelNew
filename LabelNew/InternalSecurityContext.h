@@ -8,46 +8,44 @@ using namespace std;
 
 namespace InternalMandatoryAccessControl
 {
+	typedef int LabelID;
+	typedef string Label;
+	typedef int ComponentID;
+
 	class InternalSecurityContext
 	{
 	public:
 		InternalSecurityContext()
 		{};
-		InternalSecurityContext(const string labelID, const int level, const vector<int>& compartments, const vector<int>& groups) :
+		InternalSecurityContext(LabelID labelID, const ComponentID level,
+			const vector<ComponentID>& compartments, const vector<ComponentID>& groups) :
 			labelID(labelID), level(level), compartments(compartments), groups(groups)
-		{}
-		InternalSecurityContext(const string labelID, const int level, const vector<int>& compartments, const vector<int>& groups,
-			long tag) :
-			labelID(labelID), level(level), compartments(compartments), groups(groups), tagLabel(tag)
 		{}
 
 		~InternalSecurityContext()
 		{}
 
-		int getLevel() { return level; };
+		ComponentID getLevel() { return level; };
 
-		vector<int> getCompartments() { return compartments; };
+		vector<ComponentID> getCompartments() { return compartments; };
 
-		vector<int> getGroups() { return groups; };
+		vector<ComponentID> getGroups() { return groups; };
 
-		long getTag() { return tagLabel; };
+		Label getLabel();
 
-		string getLabel();
-
-		string getLabelID() { return labelID; };
+		LabelID getLabelID() { return labelID; };
 
 	private:
-		string labelID;
-		int level;
-		vector<int> compartments;
-		vector<int> groups;
-
-		long tagLabel;
+		LabelID labelID;
+		ComponentID level;
+		vector<ComponentID> compartments;
+		vector<ComponentID> groups;
 	};
 
-	string InternalMandatoryAccessControl::InternalSecurityContext::getLabel()
+	Label InternalMandatoryAccessControl::InternalSecurityContext::getLabel()
 	{
-		string temp = labelID + ":" + to_string(level) + ":";
+		Label temp = "";
+		temp = to_string(labelID) + ":" + to_string(level) + ":";
 		for (auto it = compartments.begin(); it != compartments.end(); it++)
 		{
 			temp += to_string(*it) + ",";

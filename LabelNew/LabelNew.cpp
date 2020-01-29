@@ -135,7 +135,7 @@ void MandatoryAccessControl::FileLabelStorage::parseObjLabel(string path)
 		string buff;
 		getline(labelFile, buff);
 
-		string labelID;
+		LabelID labelID;
 		int level = 0;
 		vector<int> compartments;
 		vector<int> groups;
@@ -182,7 +182,7 @@ void MandatoryAccessControl::FileLabelStorage::parseObjLabel(string path)
  *	Checks which colon and depending on this determines a particular label field
  */
 
-bool MandatoryAccessControl::LabelStorage::checkColon(string temp, string & labelID,
+bool MandatoryAccessControl::LabelStorage::checkColon(string temp, LabelID & labelID,
 	int & level, vector<int>& compartment, vector<int>& group, int colon)
 {
 	string type = "Default";
@@ -192,7 +192,7 @@ bool MandatoryAccessControl::LabelStorage::checkColon(string temp, string & labe
 		type = "ID";
 		if (strlen(temp.c_str()) != 0)
 		{
-			labelID = temp;
+			labelID = atoi(temp.c_str());
 			return true;
 		}
 		break;
@@ -228,9 +228,9 @@ bool MandatoryAccessControl::LabelStorage::checkColon(string temp, string & labe
 	return false;
 }
 
-SecurityContext& MandatoryAccessControl::Engine::getSecurityContext(string labelID)
+SecurityContext& MandatoryAccessControl::Engine::getSecurityContext(LabelID labelID)
 {
-	map<string, SecurityContext*> temp = label.getAllObjLabels();
+	map<LabelID, SecurityContext*> temp = label.getAllObjLabels();
 	if (temp.find(labelID) != temp.end())
 	{
 		return *temp.find(labelID)->second;
@@ -320,10 +320,10 @@ bool MandatoryAccessControl::Engine::compareGroups(SecurityContext & subject, Se
 	return groups;
 }
 
-string MandatoryAccessControl::Engine::getAllLabel()
+Label MandatoryAccessControl::Engine::getAllLabel()
 {
-	string temp = "";
-	map<string, SecurityContext*> tempLabel = label.getAllObjLabels();
+	Label temp = "";
+	map<LabelID, SecurityContext*> tempLabel = label.getAllObjLabels();
 	for (auto it = tempLabel.begin(); it != tempLabel.end(); it++)
 	{
 		temp += (*it).second->getLabel() + "\n";
@@ -331,10 +331,10 @@ string MandatoryAccessControl::Engine::getAllLabel()
 	return temp;
 }
 
-string MandatoryAccessControl::Engine::getReadableLookLabel(string labelID)
+Label MandatoryAccessControl::Engine::getReadableLookLabel(LabelID labelID)
 {
-	string temp = "";
-	map<string, SecurityContext*> tempLabel = label.getAllObjLabels();
+	Label temp = "";
+	map<LabelID, SecurityContext*> tempLabel = label.getAllObjLabels();
 	if (tempLabel.find(labelID) != tempLabel.end())
 	{
 		temp += (*tempLabel.find(labelID)).second->getLabel();
@@ -346,46 +346,35 @@ string MandatoryAccessControl::Engine::getReadableLookLabel(string labelID)
 	return temp;
 }
 
-MandatoryAccessControl::SecurityContext::SecurityContext(const string id, const int level,
-	const vector<int>& compartments, const vector<int>& groups)
+MandatoryAccessControl::SecurityContext::SecurityContext(const LabelID id, const ComponentID level,
+	const vector<ComponentID>& compartments, const vector<ComponentID>& groups)
 {
 	objLabel = new InternalMandatoryAccessControl::InternalSecurityContext(id, level, compartments, groups);
 }
 
-MandatoryAccessControl::SecurityContext::SecurityContext(string id, int level,
-	const vector<int>& compartments, const vector<int>& groups, long tag)
-{
-	objLabel = new InternalMandatoryAccessControl::InternalSecurityContext(id, level, compartments, groups, tag);
-}
-
-string MandatoryAccessControl::SecurityContext::getLabel()
+Label MandatoryAccessControl::SecurityContext::getLabel()
 {
 	return objLabel->getLabel(); 
 }
 
-string MandatoryAccessControl::SecurityContext::getLabelID()
+LabelID MandatoryAccessControl::SecurityContext::getLabelID()
 {
 	return objLabel->getLabelID();
 }
 
-int MandatoryAccessControl::SecurityContext::getLevelLabel()
+ComponentID MandatoryAccessControl::SecurityContext::getLevelLabel()
 {
 	return objLabel->getLevel();
 }
 
-vector<int> MandatoryAccessControl::SecurityContext::getCompartmentsLabel()
+vector<ComponentID> MandatoryAccessControl::SecurityContext::getCompartmentsLabel()
 {
 	return objLabel->getCompartments();
 }
 
-vector<int> MandatoryAccessControl::SecurityContext::getGroupsLabel()
+vector<ComponentID> MandatoryAccessControl::SecurityContext::getGroupsLabel()
 {
 	return objLabel->getGroups();
-}
-
-long MandatoryAccessControl::SecurityContext::getTagLabel()
-{
-	return objLabel->getTag();
 }
 
 void MandatoryAccessControl::SimpleLabelStorage::createLevel(string full, string shortForm, int numForm)
@@ -404,7 +393,7 @@ void MandatoryAccessControl::SimpleLabelStorage::createCompartment(string full, 
 	compartments[numForm].shortForm = shortForm;
 }
 
-void MandatoryAccessControl::SimpleLabelStorage::createGroup(string full, string shortForm, int numForm, int parent)
+void MandatoryAccessControl::SimpleLabelStorage::createGroup(string full, string shortForm, int numForm, ComponentID parent)
 {
 	groups[numForm].idComponent = numForm;
 	groups[numForm].numForm = numForm;
@@ -413,8 +402,8 @@ void MandatoryAccessControl::SimpleLabelStorage::createGroup(string full, string
 	groups[numForm].parentComp = &getGroups(parent);
 }
 
-void MandatoryAccessControl::SimpleLabelStorage::createObjectLabel(string id, 
-	int level, vector<int>& compartment, vector<int>& group)
+void MandatoryAccessControl::SimpleLabelStorage::createObjectLabel(LabelID id, 
+	ComponentID level, vector<ComponentID>& compartment, vector<ComponentID>& group)
 {
 	bool lev = (levels.find(level) != levels.end()) ? true : false;
 
@@ -432,29 +421,6 @@ void MandatoryAccessControl::SimpleLabelStorage::createObjectLabel(string id,
 
 	if (lev && comp && gr)
 		objLabels[id] = new SecurityContext(id, level, compartment, group);
-	else
-		printf("Check entered label.\n");
-}
-
-void MandatoryAccessControl::SimpleLabelStorage::createObjectLabel(string id, 
-	int level, vector<int>& compartment, vector<int>& group, long tag)
-{
-	bool lev = (levels.find(level) != levels.end()) ? true : false;
-
-	bool comp;
-	for (int i = 0; i < compartment.size(); i++)
-	{
-		comp = (compartments.find(compartment[i]) != compartments.end()) ? true : false;
-	}
-
-	bool gr;
-	for (int i = 0; i < group.size(); i++)
-	{
-		gr = (groups.find(group[i]) != groups.end()) ? true : false;
-	}
-
-	if (lev && comp && gr)
-		objLabels[id] = new SecurityContext(id, level, compartment, group, tag);
 	else
 		printf("Check entered label.\n");
 }
