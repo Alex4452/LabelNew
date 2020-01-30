@@ -241,43 +241,44 @@ SecurityContext& MandatoryAccessControl::Engine::getSecurityContext(LabelID labe
 	}
 }
 
-bool MandatoryAccessControl::Engine::checkAccess(SecurityContext& subject, SecurityContext& object, AccessVector accessVector)
+bool MandatoryAccessControl::Engine::checkAccess(SecurityContext& subject, SecurityContext& object, 
+	AccessVector accessVector, SecurityPolicy policy)
 {
 	bool level = false;
 	bool compartments = false;
 	bool groups = false;
 
 	// Check levels
-	switch (accessVector)
-	{
-	case READ:
-		if (subject.getLevelLabel() >= object.getLevelLabel())
-			level = true;
-		break;
-	case WRITE:
-		if (subject.getLevelLabel() == object.getLevelLabel())
-			level = true;
-		break;
-	default:
-		level = false;
-		break;
-	}
-
-	// Check compartmets
-	for (int i = 0; i < subject.getCompartmentsLabel().size(); i++)
-	{
-		for (int j = 0; j < object.getCompartmentsLabel().size(); j++)
-		{
-			if (subject.getCompartmentsLabel()[i] == object.getCompartmentsLabel()[j])
-			{
-				compartments = true;
-				break;
-			}
-		}
-	}
+	level = compareLevel(subject, object, accessVector);
 
 	// Check groups
-	groups = compareGroups(subject, object);
+	if (policy != COMPACCESS)
+		groups = compareGroups(subject, object);
+	else
+		groups = true;
+
+	// Check compartmets
+	compartments = compareCompartments(subject, object);
+
+	// Check policy
+	switch (policy)
+	{
+	case MandatoryAccessControl::FULL_ACCESS:
+		level = true;
+		compartments = true;
+		groups = true;
+		break;
+	case MandatoryAccessControl::READ_ACCESS:
+		if (accessVector == READ)
+		{
+			level = true;
+			compartments = true;
+			groups = true;
+		}
+		break;
+	default:
+		break;
+	}
 
 	if (level && compartments && groups)
 		return true;
@@ -285,39 +286,83 @@ bool MandatoryAccessControl::Engine::checkAccess(SecurityContext& subject, Secur
 		return false;
 }
 
+bool MandatoryAccessControl::Engine::compareLevel(SecurityContext & subject, SecurityContext & object, AccessVector accessVector)
+{
+	switch (accessVector)
+	{
+	case READ:
+		if (subject.getLevelLabel() >= object.getLevelLabel())
+			return true;
+		break;
+	case WRITE:
+		if (subject.getLevelLabel() == object.getLevelLabel())
+			return true;
+		break;
+	default:
+		return false;
+		break;
+	}
+	return false;
+}
+
+bool MandatoryAccessControl::Engine::compareCompartments(SecurityContext & subject, SecurityContext & object)
+{
+	if (object.getCompartmentsLabel().size() == NULL)
+		return true;
+	else if (subject.getCompartmentsLabel().size() == NULL)
+		return false;
+	else
+	{
+		map<int, bool> objInclude;
+		for (int i = 0; i < object.getCompartmentsLabel().size(); i++)
+		{
+			objInclude[object.getCompartmentsLabel()[i]] = false;
+		}
+
+		for (int i = 0; i < subject.getCompartmentsLabel().size(); i++)
+		{
+			if (objInclude.find(subject.getCompartmentsLabel()[i]) != objInclude.end())
+				objInclude[objInclude.find(subject.getCompartmentsLabel()[i])->first] = true;
+		}
+
+		for (auto it = objInclude.begin(); it != objInclude.end(); it++)
+		{
+			if (it->second == false)
+				return false;
+		}
+		return true;
+	}
+}
+
 bool MandatoryAccessControl::Engine::compareGroups(SecurityContext & subject, SecurityContext & object)
 {
-	bool groups = false;
-	// Check groups
-	for (int i = 0; i < subject.getGroupsLabel().size(); i++)
+	if (object.getGroupsLabel().size() == NULL)
+		return true;
+	else if (subject.getGroupsLabel().size() == NULL)
+		return false;
+	else
 	{
-		for (int j = 0; j < object.getGroupsLabel().size(); j++)
+		for (int i = 0; i < subject.getGroupsLabel().size(); i++)
 		{
-			if (subject.getGroupsLabel()[i] == object.getGroupsLabel()[j])
+			for (int j = 0; j < object.getGroupsLabel().size(); j++)
 			{
-				groups = true;
-				break;
-			}
-			else
-			{
-				LabelStorage::Component* obj = &label.getGroups(object.getGroupsLabel()[j]);
-				while (obj->parentComp)
-				{	
-					if (subject.getGroupsLabel()[i] == obj->parentComp->numForm)
-					{
-						groups = true;
-						break;
-					}
-					else
-					{
-						obj = obj->parentComp;
+				if (subject.getGroupsLabel()[i] == object.getGroupsLabel()[j])
+					return true;
+				else
+				{
+					LabelStorage::Component* obj = &label.getGroups(object.getGroupsLabel()[j]);
+					while (obj->parentComp)
+					{	
+						if (subject.getGroupsLabel()[i] == obj->parentComp->numForm)
+							return true;
+						else
+							obj = obj->parentComp;
 					}
 				}
-				
 			}
 		}
 	}
-	return groups;
+	return false;
 }
 
 Label MandatoryAccessControl::Engine::getAllLabel()
@@ -331,7 +376,7 @@ Label MandatoryAccessControl::Engine::getAllLabel()
 	return temp;
 }
 
-Label MandatoryAccessControl::Engine::getReadableLookLabel(LabelID labelID)
+Label MandatoryAccessControl::Engine::getLabel(LabelID labelID)
 {
 	Label temp = "";
 	map<LabelID, SecurityContext*> tempLabel = label.getAllObjLabels();
@@ -344,6 +389,20 @@ Label MandatoryAccessControl::Engine::getReadableLookLabel(LabelID labelID)
 		printf("Label not found.");
 	}
 	return temp;
+}
+
+LabelID MandatoryAccessControl::Engine::getLabelID(Label labelRead)
+{
+	map<LabelID, SecurityContext*> tempLabel = label.getAllObjLabels();
+
+	for (auto it = tempLabel.begin(); it != tempLabel.end(); it++)
+	{
+		if (it->second->getLabel() == labelRead)
+		{
+			return it->second->getLabelID();
+		}
+	}
+	return NULL;
 }
 
 MandatoryAccessControl::SecurityContext::SecurityContext(const LabelID id, const ComponentID level,
@@ -405,18 +464,29 @@ void MandatoryAccessControl::SimpleLabelStorage::createGroup(string full, string
 void MandatoryAccessControl::SimpleLabelStorage::createObjectLabel(LabelID id, 
 	ComponentID level, vector<ComponentID>& compartment, vector<ComponentID>& group)
 {
-	bool lev = (levels.find(level) != levels.end()) ? true : false;
+	bool lev = false;
+	lev = (levels.find(level) != levels.end()) ? true : false;
 
-	bool comp;
-	for (int i = 0; i < compartment.size(); i++)
+	bool comp = false;
+	if (compartment.size() == NULL)
+		comp = true;
+	else
 	{
-		comp = (compartments.find(compartment[i]) != compartments.end()) ? true : false;
+		for (int i = 0; i < compartment.size(); i++)
+		{
+			comp = (compartments.find(compartment[i]) != compartments.end()) ? true : false;
+		}
 	}
 
-	bool gr;
-	for (int i = 0; i < group.size(); i++)
+	bool gr = false;
+	if (groups.size() == NULL)
+		gr = true;
+	else
 	{
-		gr = (groups.find(group[i]) != groups.end()) ? true : false;
+		for (int i = 0; i < group.size(); i++)
+		{
+			gr = (groups.find(group[i]) != groups.end()) ? true : false;
+		}
 	}
 
 	if (lev && comp && gr)

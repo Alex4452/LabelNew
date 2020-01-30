@@ -48,6 +48,14 @@ namespace MandatoryAccessControl
 		//...
 	};
 
+	enum LABELNEW_API SecurityPolicy {
+		NO_POLICY = 0,
+		FULL_ACCESS = 1,
+		READ_ACCESS = 2,
+		COMPACCESS = 3,
+		//...
+	};
+
 	/******************************************************************************
 	 *
 	 *	Used for processing and storing component labels and object labels
@@ -153,11 +161,15 @@ namespace MandatoryAccessControl
 		SecurityContext& getSecurityContext(LabelID labelID);
 
 		// Used to verify access of one label to another
-		bool checkAccess(SecurityContext& subject, SecurityContext& object, AccessVector accessVector);
+		bool checkAccess(SecurityContext& subject, SecurityContext& object, 
+			AccessVector accessVector, SecurityPolicy policy = NO_POLICY);
+		bool compareLevel(SecurityContext& subject, SecurityContext& object, AccessVector accessVector);
+		bool compareCompartments(SecurityContext& subject, SecurityContext& object);
 		bool compareGroups(SecurityContext& subject, SecurityContext& object);
 
 		Label getAllLabel();
-		Label getReadableLookLabel(LabelID labelID);
+		Label getLabel(LabelID labelID);
+		LabelID getLabelID(Label labelRead);
 
 	private:
 		LabelStorage& label;

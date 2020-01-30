@@ -75,7 +75,9 @@ TEST(TestWorkEngine, TestGetLabelID) {
 
 	Engine engineTest(labelTest);
 
-	EXPECT_EQ(engineTest.getSecurityContext(1010).getLabelID(), 1010);
+	Label testLabel = engineTest.getLabel(1010);
+
+	EXPECT_EQ(engineTest.getLabelID(testLabel), 1010);
 }
 
 TEST(TestWorkEngine, TestGetLabel) {
@@ -92,10 +94,10 @@ TEST(TestWorkEngine, TestGetLabel) {
 
 	Engine engineTest(labelTest);
 
-	EXPECT_EQ(engineTest.getReadableLookLabel(1010), "1010:40:85:1000");
+	EXPECT_EQ(engineTest.getLabel(1010), "1010:40:85:1000");
 }
 
-TEST(TestWorkEngine, TestReadAccessCheck) {
+TEST(TestEngineCheckAccessForRead, TestReadAccessCheckForSimpleLabSt) {
 
 	SimpleLabelStorage labelTest;
 
@@ -124,7 +126,31 @@ TEST(TestWorkEngine, TestReadAccessCheck) {
 	EXPECT_FALSE(engineTest.checkAccess(objTest, subjTest, READ));
 }
 
-TEST(TestWorkEngine, TestWriteAccessCheck) {
+TEST(TestEngineCheckAccessForRead, TestReadAccessCheckForFileLabSt) {
+
+	string fileLevel = "..\\UnitTestLabel\\TestFiles\\TestLevelLabel.txt";
+	string fileCompartment = "..\\UnitTestLabel\\TestFiles\\TestLabelCompartments.txt";
+	string fileGroup = "..\\UnitTestLabel\\TestFiles\\TestGroupLabel.txt";
+	string fileObjectLabel = "..\\UnitTestLabel\\TestFiles\\TestObjectLabel.txt";
+
+	FileLabelStorage labelFileTest(fileLevel, fileCompartment, fileGroup, fileObjectLabel);
+
+	Engine engineTest(labelFileTest);
+	SecurityContext firstLabelTest = engineTest.getSecurityContext(1010);
+	SecurityContext secondLabelTest = engineTest.getSecurityContext(2020);
+	SecurityContext thridLabelTest = engineTest.getSecurityContext(3030);
+
+	EXPECT_TRUE(engineTest.checkAccess(firstLabelTest, secondLabelTest, READ));
+	EXPECT_FALSE(engineTest.checkAccess(secondLabelTest, firstLabelTest, READ));
+
+	EXPECT_TRUE(engineTest.checkAccess(firstLabelTest, thridLabelTest, READ));
+	EXPECT_FALSE(engineTest.checkAccess(thridLabelTest, firstLabelTest, READ));
+
+	EXPECT_FALSE(engineTest.checkAccess(secondLabelTest, thridLabelTest, READ));
+	EXPECT_FALSE(engineTest.checkAccess(thridLabelTest, secondLabelTest, READ));
+}
+
+TEST(TestEngineCheckAccessForWrite, TestWriteAccessCheckForSimpleLabSt) {
 
 	SimpleLabelStorage labelTest;
 
@@ -151,4 +177,180 @@ TEST(TestWorkEngine, TestWriteAccessCheck) {
 
 	EXPECT_TRUE(engineTest.checkAccess(subjTest, objTest, WRITE));
 	EXPECT_FALSE(engineTest.checkAccess(objTest, subjTest, WRITE));
+}
+
+TEST(TestEngineCheckAccessForWrite, TestWriteAccessCheckForFileLabSt) {
+
+	string fileLevel = "..\\UnitTestLabel\\TestFiles\\TestLevelLabel.txt";
+	string fileCompartment = "..\\UnitTestLabel\\TestFiles\\TestLabelCompartments.txt";
+	string fileGroup = "..\\UnitTestLabel\\TestFiles\\TestGroupLabel.txt";
+	string fileObjectLabel = "..\\UnitTestLabel\\TestFiles\\TestObjectLabel.txt";
+
+	FileLabelStorage labelFileTest(fileLevel, fileCompartment, fileGroup, fileObjectLabel);
+
+	Engine engineTest(labelFileTest);
+	SecurityContext firstLabelTest = engineTest.getSecurityContext(1010);
+	SecurityContext secondLabelTest = engineTest.getSecurityContext(2020);
+	SecurityContext thridLabelTest = engineTest.getSecurityContext(3030);
+
+	EXPECT_FALSE(engineTest.checkAccess(firstLabelTest, secondLabelTest, WRITE));
+	EXPECT_FALSE(engineTest.checkAccess(secondLabelTest, firstLabelTest, WRITE));
+
+	EXPECT_FALSE(engineTest.checkAccess(firstLabelTest, thridLabelTest, WRITE));
+	EXPECT_FALSE(engineTest.checkAccess(thridLabelTest, firstLabelTest, WRITE));
+
+	EXPECT_FALSE(engineTest.checkAccess(secondLabelTest, thridLabelTest, WRITE));
+	EXPECT_FALSE(engineTest.checkAccess(thridLabelTest, secondLabelTest, WRITE));
+}
+
+TEST(TestEngineCheckAccessWithPolitics, TestReadAccessForFullAccsess) {
+
+	string fileLevel = "..\\UnitTestLabel\\TestFiles\\TestLevelLabel.txt";
+	string fileCompartment = "..\\UnitTestLabel\\TestFiles\\TestLabelCompartments.txt";
+	string fileGroup = "..\\UnitTestLabel\\TestFiles\\TestGroupLabel.txt";
+	string fileObjectLabel = "..\\UnitTestLabel\\TestFiles\\TestObjectLabel.txt";
+
+	FileLabelStorage labelFileTest(fileLevel, fileCompartment, fileGroup, fileObjectLabel);
+
+	Engine engineTest(labelFileTest);
+	SecurityContext firstLabelTest = engineTest.getSecurityContext(1010);
+	SecurityContext secondLabelTest = engineTest.getSecurityContext(2020);
+	SecurityContext thridLabelTest = engineTest.getSecurityContext(3030);
+
+	EXPECT_TRUE(engineTest.checkAccess(firstLabelTest, secondLabelTest, READ, FULL_ACCESS));
+	EXPECT_TRUE(engineTest.checkAccess(secondLabelTest, firstLabelTest, READ, FULL_ACCESS));
+
+	EXPECT_TRUE(engineTest.checkAccess(firstLabelTest, thridLabelTest, READ, FULL_ACCESS));
+	EXPECT_TRUE(engineTest.checkAccess(thridLabelTest, firstLabelTest, READ, FULL_ACCESS));
+
+	EXPECT_TRUE(engineTest.checkAccess(secondLabelTest, thridLabelTest, READ, FULL_ACCESS));
+	EXPECT_TRUE(engineTest.checkAccess(thridLabelTest, secondLabelTest, READ, FULL_ACCESS));
+}
+
+TEST(TestEngineCheckAccessWithPolitics, TestWriteAccessForFullAccsess) {
+
+	string fileLevel = "..\\UnitTestLabel\\TestFiles\\TestLevelLabel.txt";
+	string fileCompartment = "..\\UnitTestLabel\\TestFiles\\TestLabelCompartments.txt";
+	string fileGroup = "..\\UnitTestLabel\\TestFiles\\TestGroupLabel.txt";
+	string fileObjectLabel = "..\\UnitTestLabel\\TestFiles\\TestObjectLabel.txt";
+
+	FileLabelStorage labelFileTest(fileLevel, fileCompartment, fileGroup, fileObjectLabel);
+
+	Engine engineTest(labelFileTest);
+	SecurityContext firstLabelTest = engineTest.getSecurityContext(1010);
+	SecurityContext secondLabelTest = engineTest.getSecurityContext(2020);
+	SecurityContext thridLabelTest = engineTest.getSecurityContext(3030);
+
+	EXPECT_TRUE(engineTest.checkAccess(firstLabelTest, secondLabelTest, WRITE, FULL_ACCESS));
+	EXPECT_TRUE(engineTest.checkAccess(secondLabelTest, firstLabelTest, WRITE, FULL_ACCESS));
+
+	EXPECT_TRUE(engineTest.checkAccess(firstLabelTest, thridLabelTest, WRITE, FULL_ACCESS));
+	EXPECT_TRUE(engineTest.checkAccess(thridLabelTest, firstLabelTest, WRITE, FULL_ACCESS));
+
+	EXPECT_TRUE(engineTest.checkAccess(secondLabelTest, thridLabelTest, WRITE, FULL_ACCESS));
+	EXPECT_TRUE(engineTest.checkAccess(thridLabelTest, secondLabelTest, WRITE, FULL_ACCESS));
+}
+
+TEST(TestEngineCheckAccessWithPolitics, TestReadAccessForReadAccess) {
+
+	string fileLevel = "..\\UnitTestLabel\\TestFiles\\TestLevelLabel.txt";
+	string fileCompartment = "..\\UnitTestLabel\\TestFiles\\TestLabelCompartments.txt";
+	string fileGroup = "..\\UnitTestLabel\\TestFiles\\TestGroupLabel.txt";
+	string fileObjectLabel = "..\\UnitTestLabel\\TestFiles\\TestObjectLabel.txt";
+
+	FileLabelStorage labelFileTest(fileLevel, fileCompartment, fileGroup, fileObjectLabel);
+
+	Engine engineTest(labelFileTest);
+	SecurityContext firstLabelTest = engineTest.getSecurityContext(1010);
+	SecurityContext secondLabelTest = engineTest.getSecurityContext(2020);
+	SecurityContext thridLabelTest = engineTest.getSecurityContext(3030);
+
+	EXPECT_TRUE(engineTest.checkAccess(firstLabelTest, secondLabelTest, READ, READ_ACCESS));
+	EXPECT_TRUE(engineTest.checkAccess(secondLabelTest, firstLabelTest, READ, READ_ACCESS));
+
+	EXPECT_TRUE(engineTest.checkAccess(firstLabelTest, thridLabelTest, READ, READ_ACCESS));
+	EXPECT_TRUE(engineTest.checkAccess(thridLabelTest, firstLabelTest, READ, READ_ACCESS));
+
+	EXPECT_TRUE(engineTest.checkAccess(secondLabelTest, thridLabelTest, READ, READ_ACCESS));
+	EXPECT_TRUE(engineTest.checkAccess(thridLabelTest, secondLabelTest, READ, READ_ACCESS));
+}
+
+TEST(TestEngineCheckAccessWithPolitics, TestWriteAccessForReadAccess) {
+
+	string fileLevel = "..\\UnitTestLabel\\TestFiles\\TestLevelLabel.txt";
+	string fileCompartment = "..\\UnitTestLabel\\TestFiles\\TestLabelCompartments.txt";
+	string fileGroup = "..\\UnitTestLabel\\TestFiles\\TestGroupLabel.txt";
+	string fileObjectLabel = "..\\UnitTestLabel\\TestFiles\\TestObjectLabel.txt";
+
+	FileLabelStorage labelFileTest(fileLevel, fileCompartment, fileGroup, fileObjectLabel);
+
+	Engine engineTest(labelFileTest);
+	SecurityContext firstLabelTest = engineTest.getSecurityContext(1010);
+	SecurityContext secondLabelTest = engineTest.getSecurityContext(2020);
+	SecurityContext thridLabelTest = engineTest.getSecurityContext(3030);
+
+	EXPECT_FALSE(engineTest.checkAccess(firstLabelTest, secondLabelTest, WRITE, READ_ACCESS));
+	EXPECT_FALSE(engineTest.checkAccess(secondLabelTest, firstLabelTest, WRITE, READ_ACCESS));
+
+	EXPECT_FALSE(engineTest.checkAccess(firstLabelTest, thridLabelTest, WRITE, READ_ACCESS));
+	EXPECT_FALSE(engineTest.checkAccess(thridLabelTest, firstLabelTest, WRITE, READ_ACCESS));
+
+	EXPECT_FALSE(engineTest.checkAccess(secondLabelTest, thridLabelTest, WRITE, READ_ACCESS));
+	EXPECT_FALSE(engineTest.checkAccess(thridLabelTest, secondLabelTest, WRITE, READ_ACCESS));
+}
+
+TEST(TestEngineCheckAccessWithPolitics, TestReadAccessCheckForCompaccess) {
+
+	SimpleLabelStorage labelTest;
+
+	labelTest.createLevel("HIGHLY_SENSITIVE", "HS", 40);
+	labelTest.createLevel("SENSITIVE", "S", 30);
+
+	labelTest.createCompartment("FINANCIAL", "FINCL", 85);
+	labelTest.createCompartment("CHEMICAL", "CHEM", 65);
+	labelTest.createCompartment("OPERATIONAL", "OP", 45);
+
+	labelTest.createGroup("WESTERN_REGION", "WR", 1000);
+	labelTest.createGroup("WR_SALES", "WR_SAL", 1100, 1000);
+	labelTest.createGroup("WR_FINANCE", "WR_FIN", 1300, 1000);
+
+	vector<int> compartmentsSubject = { 65, 45 };
+	vector<int> groupsSubject = { 1100 };
+	labelTest.createObjectLabel(1010, 40, compartmentsSubject, groupsSubject);
+
+	vector<int> compartmentsObject = { 65 };
+	vector<int> groupsObject = { 1300 };
+	labelTest.createObjectLabel(2020, 30, compartmentsObject, groupsObject);
+
+	Engine engineTest(labelTest);
+	SecurityContext subjTest = engineTest.getSecurityContext(1010);
+	SecurityContext objTest = engineTest.getSecurityContext(2020);
+
+	EXPECT_TRUE(engineTest.checkAccess(subjTest, objTest, READ, COMPACCESS));
+	EXPECT_FALSE(engineTest.checkAccess(objTest, subjTest, READ, COMPACCESS));
+
+	vector<int> compartmentsNewObject = { 45 };
+	vector<int> groupsNewObject = { 1300 };
+	labelTest.createObjectLabel(3030, 30, compartmentsNewObject, groupsNewObject);
+
+	SecurityContext newObjTest = engineTest.getSecurityContext(3030);
+
+	EXPECT_TRUE(engineTest.checkAccess(subjTest, newObjTest, READ, COMPACCESS));
+	EXPECT_FALSE(engineTest.checkAccess(newObjTest, objTest, READ, COMPACCESS));
+	EXPECT_FALSE(engineTest.checkAccess(newObjTest, subjTest, READ, COMPACCESS));
+
+	vector<int> compartmentsNewSubject;
+	vector<int> groupsNewSubject = { 1300 };
+	labelTest.createObjectLabel(4040, 30, compartmentsNewSubject, groupsNewSubject);
+
+	SecurityContext newSubTest = engineTest.getSecurityContext(4040);
+
+	EXPECT_TRUE(engineTest.checkAccess(subjTest, newSubTest, READ, COMPACCESS));
+	EXPECT_FALSE(engineTest.checkAccess(subjTest, newSubTest, READ));
+
+	EXPECT_TRUE(engineTest.checkAccess(newObjTest, newSubTest, READ, COMPACCESS));
+	EXPECT_TRUE(engineTest.checkAccess(newObjTest, newSubTest, READ));
+
+	EXPECT_FALSE(engineTest.checkAccess(newSubTest, newObjTest, READ, COMPACCESS));
+	EXPECT_FALSE(engineTest.checkAccess(newSubTest, newObjTest, READ));
 }
