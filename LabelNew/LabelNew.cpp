@@ -136,9 +136,9 @@ void MandatoryAccessControl::FileLabelStorage::parseObjLabel(string path)
 		getline(labelFile, buff);
 
 		LabelID labelID;
-		int level = 0;
-		vector<int> compartments;
-		vector<int> groups;
+		ComponentID level = 0;
+		vector<ComponentID> compartments;
+		vector<ComponentID> groups;
 
 		bool accessCreateLabel;
 		int startInd = 0;
@@ -170,6 +170,9 @@ void MandatoryAccessControl::FileLabelStorage::parseObjLabel(string path)
 		if(accessCreateLabel)
 			accessCreateLabel = checkColon(temp, labelID, level, compartments, groups, colon);
 
+		if (labelID == -1)
+			labelID = hashID(level, compartments, groups);
+
 		if(accessCreateLabel)
 			objLabels[labelID] = new SecurityContext(labelID, level, compartments, groups);
 		else
@@ -193,6 +196,11 @@ bool MandatoryAccessControl::LabelStorage::checkColon(string temp, LabelID & lab
 		if (strlen(temp.c_str()) != 0)
 		{
 			labelID = atoi(temp.c_str());
+			return true;
+		}
+		else
+		{
+			labelID = -1;
 			return true;
 		}
 		break;
@@ -226,6 +234,30 @@ bool MandatoryAccessControl::LabelStorage::checkColon(string temp, LabelID & lab
 	}
 	printf((type + " not found.\n").c_str());
 	return false;
+}
+
+LabelID MandatoryAccessControl::LabelStorage::hashID(ComponentID level, vector<ComponentID>& compartments, vector<ComponentID>& groups)
+{
+	LabelID hashLabel;
+	ComponentID comp = 0;
+	ComponentID gr = 0;
+
+	for (int i = 0; i < compartments.size(); i++)
+	{
+		comp += compartments[i];
+	}
+
+	for (int i = 0; i < groups.size(); i++)
+	{
+		gr += groups[i];
+	}
+
+	hashLabel = (level + comp + gr);
+	std::hash<LabelID> hashF;
+	hashLabel = hashF(hashLabel);
+	if (hashLabel < 0)
+		hashLabel = ~hashLabel;
+	return hashLabel;
 }
 
 SecurityContext& MandatoryAccessControl::Engine::getSecurityContext(LabelID labelID)
@@ -461,8 +493,8 @@ void MandatoryAccessControl::SimpleLabelStorage::createGroup(string full, string
 	groups[numForm].parentComp = &getGroups(parent);
 }
 
-void MandatoryAccessControl::SimpleLabelStorage::createObjectLabel(LabelID id, 
-	ComponentID level, vector<ComponentID>& compartment, vector<ComponentID>& group)
+void MandatoryAccessControl::SimpleLabelStorage::createObjectLabel(ComponentID level, 
+	vector<ComponentID>& compartment, vector<ComponentID>& group, LabelID id)
 {
 	bool lev = false;
 	lev = (levels.find(level) != levels.end()) ? true : false;
@@ -488,6 +520,9 @@ void MandatoryAccessControl::SimpleLabelStorage::createObjectLabel(LabelID id,
 			gr = (groups.find(group[i]) != groups.end()) ? true : false;
 		}
 	}
+
+	if (id == -1)
+		id = hashID(level, compartment, group);
 
 	if (lev && comp && gr)
 		objLabels[id] = new SecurityContext(id, level, compartment, group);

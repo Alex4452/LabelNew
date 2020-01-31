@@ -84,6 +84,8 @@ namespace MandatoryAccessControl
 		bool checkColon(string temp, LabelID& labelID, int& level,
 			vector<int>& compartments, vector<int>& groups, int colon);
 
+		LabelID hashID(ComponentID level, vector<ComponentID>& compartments, vector<ComponentID>& groups);
+
 		struct Component
 		{
 			Component () : parentComp(NULL)
@@ -143,7 +145,7 @@ namespace MandatoryAccessControl
 		void createGroup(string full, string shortForm, int numForm, ComponentID parent = -1);
 
 		// Used for setting objects label
-		void createObjectLabel(LabelID id, ComponentID level, vector<ComponentID>& compartments, vector<ComponentID>& groups);
+		void createObjectLabel(ComponentID level, vector<ComponentID>& compartments, vector<ComponentID>& groups, LabelID id = -1);
 	};
 
 	/******************************************************************************

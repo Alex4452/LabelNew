@@ -28,10 +28,26 @@ TEST(TestCreateSimpleLabel, TestObjectSimpleLabelStorage) {
 
 	vector<ComponentID> compartments = { 85 };
 	vector<ComponentID> groups = { 1000 };
-	labelTest.createObjectLabel(1010, 40, compartments, groups);
+	labelTest.createObjectLabel(40, compartments, groups, 1010);
 	map<LabelID, SecurityContext*> testObjectLavel = labelTest.getAllObjLabels();
 
 	EXPECT_TRUE(testObjectLavel.find(1010) != testObjectLavel.end());
+}
+
+TEST(TestCreateSimpleLabel, TestObjectSimpleLabelStorageNullID) {
+
+	SimpleLabelStorage labelTest;
+
+	labelTest.createLevel("HIGHLY_SENSITIVE", "HS", 40);
+	labelTest.createCompartment("FINANCIAL", "FINCL", 85);
+	labelTest.createGroup("WESTERN_REGION", "WR", 1000);
+
+	vector<ComponentID> compartments = { 85 };
+	vector<ComponentID> groups = { 1000 };
+	labelTest.createObjectLabel(40, compartments, groups);
+	map<LabelID, SecurityContext*> testObjectLavel = labelTest.getAllObjLabels();
+
+	EXPECT_TRUE(testObjectLavel.find(labelTest.hashID(40, compartments, groups)) != testObjectLavel.end());
 }
 
 TEST(TestCreateFileLabel, TestFileLabelStorage) {
@@ -61,6 +77,20 @@ TEST(TestCreateFileLabel, TestObjectFileLabelStorage) {
 	EXPECT_TRUE(testObjectLavel.find(1010) != testObjectLavel.end());
 }
 
+TEST(TestCreateFileLabel, TestObjectFileLabelStorageNullID) {
+	string fileLevel = "..\\UnitTestLabel\\TestFiles\\TestLevelLabel.txt";
+	string fileCompartment = "..\\UnitTestLabel\\TestFiles\\TestLabelCompartments.txt";
+	string fileGroup = "..\\UnitTestLabel\\TestFiles\\TestGroupLabel.txt";
+	string fileObjectLabel = "..\\UnitTestLabel\\TestFiles\\TestObjectLabelNullID.txt";
+
+	FileLabelStorage labelFileTest(fileLevel, fileCompartment, fileGroup, fileObjectLabel);
+
+	map<LabelID, SecurityContext*> testObjectLavel = labelFileTest.getAllObjLabels();
+
+	EXPECT_TRUE(testObjectLavel.find(-1) == testObjectLavel.end());
+	EXPECT_EQ(testObjectLavel.size(), 3);
+}
+
 TEST(TestWorkEngine, TestGetLabelID) {
 
 	SimpleLabelStorage labelTest;
@@ -71,7 +101,7 @@ TEST(TestWorkEngine, TestGetLabelID) {
 
 	vector<ComponentID> compartments = { 85 };
 	vector<ComponentID> groups = { 1000 };
-	labelTest.createObjectLabel(1010, 40, compartments, groups);
+	labelTest.createObjectLabel(40, compartments, groups, 1010);
 
 	Engine engineTest(labelTest);
 
@@ -90,7 +120,7 @@ TEST(TestWorkEngine, TestGetLabel) {
 
 	vector<ComponentID> compartments = { 85 };
 	vector<ComponentID> groups = { 1000 };
-	labelTest.createObjectLabel(1010, 40, compartments, groups);
+	labelTest.createObjectLabel(40, compartments, groups, 1010);
 
 	Engine engineTest(labelTest);
 
@@ -112,11 +142,11 @@ TEST(TestEngineCheckAccessForRead, TestReadAccessCheckForSimpleLabSt) {
 
 	vector<int> compartmentsObject = { 85, 65 };
 	vector<int> groupsObject = { 1000 };
-	labelTest.createObjectLabel(1010, 40, compartmentsObject, groupsObject);
+	labelTest.createObjectLabel(40, compartmentsObject, groupsObject, 1010);
 
 	vector<int> compartmentsSubject = { 65 };
 	vector<int> groupsSubject = { 1100 };
-	labelTest.createObjectLabel(2020, 30, compartmentsSubject, groupsSubject);
+	labelTest.createObjectLabel(30, compartmentsSubject, groupsSubject, 2020);
 
 	Engine engineTest(labelTest);
 	SecurityContext subjTest = engineTest.getSecurityContext(1010);
@@ -165,11 +195,11 @@ TEST(TestEngineCheckAccessForWrite, TestWriteAccessCheckForSimpleLabSt) {
 
 	vector<int> compartmentsObject = { 85, 65 };
 	vector<int> groupsSubject = { 1000 };
-	labelTest.createObjectLabel(1010, 40, compartmentsObject, groupsSubject);
+	labelTest.createObjectLabel(40, compartmentsObject, groupsSubject, 1010);
 
 	vector<int> compartmentsSubject = { 65 };
 	vector<int> groupsObject = { 1100 };
-	labelTest.createObjectLabel(2020, 40, compartmentsSubject, groupsObject);
+	labelTest.createObjectLabel(40, compartmentsSubject, groupsObject, 2020);
 
 	Engine engineTest(labelTest);
 	SecurityContext subjTest = engineTest.getSecurityContext(1010);
@@ -316,11 +346,11 @@ TEST(TestEngineCheckAccessWithPolitics, TestReadAccessCheckForCompaccess) {
 
 	vector<int> compartmentsSubject = { 65, 45 };
 	vector<int> groupsSubject = { 1100 };
-	labelTest.createObjectLabel(1010, 40, compartmentsSubject, groupsSubject);
+	labelTest.createObjectLabel(40, compartmentsSubject, groupsSubject, 1010);
 
 	vector<int> compartmentsObject = { 65 };
 	vector<int> groupsObject = { 1300 };
-	labelTest.createObjectLabel(2020, 30, compartmentsObject, groupsObject);
+	labelTest.createObjectLabel(30, compartmentsObject, groupsObject, 2020);
 
 	Engine engineTest(labelTest);
 	SecurityContext subjTest = engineTest.getSecurityContext(1010);
@@ -331,7 +361,7 @@ TEST(TestEngineCheckAccessWithPolitics, TestReadAccessCheckForCompaccess) {
 
 	vector<int> compartmentsNewObject = { 45 };
 	vector<int> groupsNewObject = { 1300 };
-	labelTest.createObjectLabel(3030, 30, compartmentsNewObject, groupsNewObject);
+	labelTest.createObjectLabel(30, compartmentsNewObject, groupsNewObject, 3030);
 
 	SecurityContext newObjTest = engineTest.getSecurityContext(3030);
 
@@ -341,7 +371,7 @@ TEST(TestEngineCheckAccessWithPolitics, TestReadAccessCheckForCompaccess) {
 
 	vector<int> compartmentsNewSubject;
 	vector<int> groupsNewSubject = { 1300 };
-	labelTest.createObjectLabel(4040, 30, compartmentsNewSubject, groupsNewSubject);
+	labelTest.createObjectLabel(30, compartmentsNewSubject, groupsNewSubject, 4040);
 
 	SecurityContext newSubTest = engineTest.getSecurityContext(4040);
 
